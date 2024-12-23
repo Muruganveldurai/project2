@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Link to external CSS -->
+</head>
+<body>
+    <h1>Welcome to the Bookstore</h1>
+    <p>Explore and manage the books in our collection!</p>
+
+    <!-- Search Form -->
+    <div class="form-container">
+        <input type="text" id="search-query" placeholder="Search for a book..." />
+        <button onclick="searchBooks()">Search</button>
+    </div>
+
+    <!-- Add Book Form -->
+    <div class="form-container">
+        <h2>Add a New Book</h2>
+        <input type="text" id="title" placeholder="Title" />
+        <input type="text" id="author" placeholder="Author" />
+        <input type="text" id="genre" placeholder="Genre" />
+        <input type="number" id="price" placeholder="Price" />
+        <input type="date" id="publishedDate" />
+        <button onclick="addBook()">Add Book</button>
+    </div>
+
+    <h2>Book List</h2>
+    <ul id="book-list" class="book-list"></ul>
+
+    <script>
+        // Fetch all books when the page loads
+        window.onload = () => {
+            fetchBooks();
+        };
+
+        // Fetch and display all books
+        function fetchBooks() {
+            fetch('/api/books')
+                .then(response => response.json())
+                .then(data => {
+                    const bookList = document.getElementById('book-list');
+                    bookList.innerHTML = ''; // Clear existing list
+                    data.forEach(book => {
+                        const li = document.createElement('li');
+                        li.className = 'book-item';
+                        li.innerHTML = `
+                            <strong>${book.title}</strong> by ${book.author} - ${book.genre} - $${book.price} 
+                            <button onclick="deleteBook('${book._id}')">Delete</button>
+                            <button onclick="editBookForm('${book._id}')">Edit</button>
+                        `;
+                        bookList.appendChild(li);
+                    });
+                })
+                .catch(err => console.log('Error fetching books:', err));
+        }
+
+        // Add a new book
+        function addBook() {
+            const title = document.getElementById('title').value;
+            const author = document.getElementById('author').value;
+            const genre = document.getElementById('genre').value;
+            const price = document.getElementById('price').value;
+            const publishedDate = document.getElementById('publishedDate').value;
+
+            const newBook = { title, author, genre, price, publishedDate };
+
+            fetch('/api/books/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newBook)
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchBooks(); // Refresh the book list after adding
+            })
+            .catch(err => console.log('Error adding book:', err));
+        }
+
+        // Search for books
+        function searchBooks() {
+            const query = document.getElementById('search-query').value;
+
+            fetch(`/api/books/search?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    const bookList = document.getElementById('book-list');
+                    bookList.innerHTML = ''; // Clear existing list
+                    data.forEach(book => {
+                        const li = document.createElement('li');
+                        li.className = 'book-item';
+                        li.innerHTML = `
+                            <strong>${book.title}</strong> by ${book.author} - ${book.genre} - $${book.price} 
+                            <button onclick="deleteBook('${book._id}')">Delete</button>
+                            <button onclick="editBookForm('${book._id}')">Edit</button>
+                        `;
+                        bookList.appendChild(li);
+                    });
+                })
+                .catch(err => console.log('Error searching books:', err));
+        }
+
+        // Delete a book by ID
+        function deleteBook(bookId) {
+            fetch(`/api/books/${bookId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchBooks(); // Refresh the book list after deleting
+            })
+            .catch(err => console.log('Error deleting book:', err));
+        }
+
+        // Show the Edit Book form (popup or inline)
+        function editBookForm(bookId) {
+            const title = prompt('Enter new title:');
+            const author = prompt('Enter new author:');
+            const genre = prompt('Enter new genre:');
+            const price = prompt('Enter new price:');
+            const publishedDate = prompt('Enter new published date (YYYY-MM-DD):');
+
+            const updatedBook = { title, author, genre, price, publishedDate };
+
+            fetch(`/api/books/${bookId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedBook),
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchBooks(); // Refresh the book list after editing
+            })
+            .catch(err => console.log('Error editing book:', err));
+        }
+    </script>
+</body>
+</html>
